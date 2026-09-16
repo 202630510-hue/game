@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비밀 연구소 탈출 (Escape Room)</title>
+    <style>
+        :root {
+            --bg-color: #121316;
+            --card-bg: #1c1e24;
+            --accent-color: #00e676;
+            --accent-glow: rgba(0, 230, 118, 0.3);
+            --danger-color: #ff5252;
+            --text-color: #e0e6ed;
+            --sub-text: #8a99ad;
+            --border-color: #2e3440;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header / Stats Bar */
+        .game-header {
+            padding: 16px 24px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .game-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .game-title::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+
+        .inventory-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .inventory-title {
+            font-size: 0.85rem;
+            color: var(--sub-text);
+            margin-right: 4px;
+        }
+
+        .inventory-slot {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .inventory-slot.has-item {
+            border-style: solid;
+            border-color: var(--accent-color);
+            background-color: rgba(0, 230, 118, 0.1);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .inventory-slot .tooltip {
+            visibility: hidden;
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #000;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .inventory-slot:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Screen Display Area */
+        .screen {
+            padding: 30px;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .room-title {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        .story-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: var(--text-color);
+            margin-bottom: 24px;
+        }
+
+        .puzzle-box {
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .puzzle-box.active {
+            display: block;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        input[type="text"], input[type="number"] {
+            flex: 1;
+            padding: 12px 16px;
+            background-color: #121316;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* Action Buttons Area */
+        .actions-container {
+            padding: 20px 30px 30px 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btn {
+            padding: 14px 20px;
+            background-color: #262a33;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .btn:hover {
+            background-color: #323743;
+            border-color: var(--accent-color);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: #0a0a0c;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #00c853;
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .btn-submit {
+            padding: 12px 20px;
+            background-color: var(--accent-color);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Message Overlay / Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50px);
+            background-color: #262a33;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            border: 1px solid var(--accent-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            pointer-events: none;
+            font-size: 0.95rem;
+            z-index: 100;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Ending Screen Special */
+        .ending {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .ending h1 {
+            color: var(--accent-color);
+            font-size: 2.2rem;
+            margin-bottom: 16px;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .ending p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <!-- Header -->
+        <div class="game-header">
+            <div class="game-title">SECRET LAB ESCAPE</div>
+            <div class="inventory-bar">
+                <span class="inventory-title">소지품:</span>
+                <div class="inventory-slot" id="slot-1"><span class="tooltip">빈 슬롯</span></div>
+                <div class="inventory-slot" id="slot-2"><span class="tooltip">빈 슬롯</span></div>
+                <div class="inventory-slot" id="slot-3"><span class="tooltip">빈 슬롯</span></div>
+            </div>
+        </div>
+
+        <!-- Main Display Area -->
+        <div class="screen" id="screen">
+            <h2 class="room-title" id="room-title">어두운 연구실</h2>
+            <p class="story-text" id="story-text">
+                눈을 뜨니 차가운 금속 침대 위입니다. 경보음이 조용히 울리고 있으며, 굳게 닫힌 강철 문이 보입니다. 
+                탈출하지 않으면 연구실이 영구 봉쇄될 것입니다!
+            </p>
+
+            <!-- Dynamic Interactive Area (Inputs/Puzzles) -->
+            <div class="puzzle-box" id="puzzle-box">
+                <div id="puzzle-content"></div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-container" id="actions-container">
+            <!-- Dynamic Buttons Will Render Here -->
+        </div>
+    </div>
+
+    <div class="toast" id="toast">알림 메시지</div>
+
+    <script>
+        // Game State
+        const state = {
+            currentRoom: 'start',
+            inventory: [],
+            flags: {
+                foundNote: false,
+                foundUVLight: false,
+                readSecretMessage: false,
+                doorUnlocked: false,
+                cabinetUnlocked: false,
+                safeUnlocked: false
+            }
+        };
+
+        // UI Elements
+        const roomTitleEl = document.getElementById('room-title');
+        const storyTextEl = document.getElementById('story-text');
+        const puzzleBoxEl = document.getElementById('puzzle-box');
+        const puzzleContentEl = document.getElementById('puzzle-content');
+        const actionsContainerEl = document.getElementById('actions-container');
+        const toastEl = document.getElementById('toast');
+
+        // Toast Notification Helper
+        function showToast(message) {
+            toastEl.textContent = message;
+            toastEl.classList.add('show');
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 2500);
+        }
+
+        // Inventory UI Update
+        function updateInventoryUI() {
+            const slots = [document.getElementById('slot-1'), document.getElementById('slot-2'), document.getElementById('slot-3')];
+            
+            slots.forEach((slot, idx) => {
+                const item = state.inventory[idx];
+                if (item) {
+                    slot.classList.add('has-item');
+                    slot.innerHTML = `${item.icon}<span class="tooltip">${item.name}</span>`;
+                } else {
+                    slot.classList.remove('has-item');
+                    slot.innerHTML = `<span class="tooltip">빈 슬롯</span>`;
+                }
+            });
+        }
+
+        function addItem(id, name, icon) {
+            if (!state.inventory.some(item => item.id === id)) {
+                state.inventory.push({ id, name, icon });
+                updateInventoryUI();
+                showToast(`아이템 획득: [${name}]`);
+            }
+        }
+
+        function hasItem(id) {
+            return state.inventory.some(item => item.id === id);
+        }
+
+        // Rooms & Game Logic
+        const scenes = {
+            start: {
+                title: '어두운 연구실 - 중앙',
+                text: '방 중앙에 서 있습니다. 전면에는 [비밀번호 키패드]가 달린 굳게 닫힌 강철 문이 있고, 오른쪽에는 [실험대], 왼쪽에는 [자물쇠가 걸린 장식장]이 보입니다.',
+                actions: [
+                    { text: '🔬 실험대 조사하기', nextScene: 'desk' },
+                    { text: '🗄️ 장식장 조사하기', nextScene: 'cabinet' },
+                    { text: '🚪 강철 문(출구) 접근하기', nextScene: 'door' }
+                ]
+            },
+            desk: {
+                title: '실험대 주변',
+                text: '어지럽게 정돈되지 않은 시약병과 서류들이 널브러져 있습니다. 구석에는 메모지와 손전등 같은 장비가 보입니다.',
+                actions: [
+                    { 
+                        text: '📄 구겨진 종이 메모 줍기', 
+                        condition: () => !state.flags.foundNote,
+                        onSelect: () => {
+                            state.flags.foundNote = true;
+                            addItem('note', '숫자 메모', '📄');
+                        },
+                        nextScene: 'desk'
+                    },
+                    {
+                        text: '🔦 자외선(UV) 플래시 줍기',
+                        condition: () => !state.flags.foundUVLight,
+                        onSelect: () => {
+                            state.flags.foundUVLight = true;
+                            addItem('uv', 'UV 랜턴', '🔦');
+                        },
+                        nextScene: 'desk'
+                    },
+                    {
+                        text: '📄 메모지 다시 읽기',
+                        condition: () => state.flags.foundNote,
+                        onSelect: () => {
+                            alert('메모 내용:\n"원소의 주기율표 번호를 기억해라.\n수소(H)=1, 탄소(C)=6, 산소(O)=8..."\n\n뒷면: [ C - H - O ]');
+                        },
+                        nextScene: 'desk'
+                    },
+                    { text: '🔙 방 중앙으로 돌아가기', nextScene: 'start' }
+                ]
+            },
+            cabinet: {
+                title: '잠긴 장식장',
+                text: () => state.flags.cabinetUnlocked 
+                    ? '장식장이 열려있습니다. 안에 [금고]가 들어있는 것이 보입니다.'
+                    : '다이얼 방식의 3자리 암호 자물쇠로 잠겨있습니다. 원소 기호 힌트가 필요할 것 같습니다.',
+                puzzle: () => {
+                    if (state.flags.cabinetUnlocked) return null;
+                    return {
+                        type: 'input',
+                        placeholder: '3자리 숫자 입력 (예: 123)',
+                        buttonText: '자물쇠 열기',
+                        check: (val) => {
+                            // C(6) - H(1) - O(8) -> 618
+                            if (val.trim() === '618') {
+                                state.flags.cabinetUnlocked = true;
+                                showToast('철컥! 장식장 자물쇠가 열렸습니다.');
+                                renderScene();
+                            } else {
+                                showToast('암호가 틀렸습니다!');
+                            }
+                        }
+                    };
+                },
+                actions: [
+                    {
+                        text: '🔒 금고 살펴보기',
+                        condition: () => state.flags.cabinetUnlocked,
+                        nextScene: 'safe'
+                    },
+                    { text: '🔙 방 중앙으로 돌아가기', nextScene: 'start' }
+                ]
+            },
+            safe: {
+                title: '내부 금고',
+                text: () => {
+                    if (state.flags.safeUnlocked) {
+                        return '금고가 열려있습니다. 이미 열쇠를 획득했습니다.';
+                    }
+                    let txt = '금고 위쪽에 투명한 판이 하나 부착되어 있습니다.';
+                    if (hasItem('uv')) {
+                        txt += ' [UV 랜턴]을 사용하면 숨겨진 글씨가 보일 것 같습니다.';
+                    }
+                    return txt;
+                },
+                actions: [
+                    {
+                        text: '🔦 UV 랜턴 비춰보기',
+                        condition: () => hasItem('uv') && !state.flags.readSecretMessage,
+                        onSelect: () => {
+                            state.flags.readSecretMessage = true;
+                            alert('UV 빛을 비추니 형광 글씨가 드러납니다!\n\n"금고 비밀번호: 2026"');
+                        },
+                        nextScene: 'safe'
+                    },
+                    { text: '🔙 장식장에서 물러나기', nextScene: 'cabinet' }
+                ],
+                puzzle: () => {
+                    if (state.flags.safeUnlocked) return null;
+                    return {
+                        type: 'input',
+                        placeholder: '4자리 금고 번호 입력',
+                        buttonText: '금고 해제',
+                        check: (val) => {
+                            if (val.trim() === '2026') {
+                                state.flags.safeUnlocked = true;
+                                addItem('keycard', '보안 카드키', '💳');
+                                showToast('금고가 열리고 보안 카드키를 얻었습니다!');
+                                renderScene();
+                            } else {
+                                showToast('비밀번호가 올바르지 않습니다.');
+                            }
+                        }
+                    };
+                }
+            },
+            door: {
+                title: '탈출 강철 문',
+                text: () => {
+                    if (hasItem('keycard')) {
+                        return '비밀번호 키패드 옆에 카드 리더기가 반짝이고 있습니다. [보안 카드키]를 사용할 수 있습니다!';
+                    }
+                    return '문 옆 키패드에 붉은색 경고등이 들어와 있습니다. 메인 보안을 해제할 카드키가 필요합니다.';
+                },
+                actions: [
+                    {
+                        text: '💳 보안 카드키 태그하기',
+                        condition: () => hasItem('keycard'),
+                        onSelect: () => {
+                            renderEnding();
+                        }
+                    },
+                    { text: '🔙 방 중앙으로 돌아가기', nextScene: 'start' }
+                ]
+            }
+        };
+
+        // Render Current Scene
+        function renderScene() {
+            const scene = scenes[state.currentRoom];
+            
+            // Set Title & Description
+            roomTitleEl.textContent = scene.title;
+            storyTextEl.textContent = typeof scene.text === 'function' ? scene.text() : scene.text;
+
+            // Handle Puzzles / Inputs
+            puzzleBoxEl.classList.remove('active');
+            puzzleContentEl.innerHTML = '';
+
+            if (scene.puzzle) {
+                const puzzleData = scene.puzzle();
+                if (puzzleData) {
+                    puzzleBoxEl.classList.add('active');
+                    
+                    const inputGroup = document.createElement('div');
+                    inputGroup.className = 'input-group';
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.placeholder = puzzleData.placeholder;
+
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-submit';
+                    btn.textContent = puzzleData.buttonText;
+                    
+                    const submitHandler = () => puzzleData.check(input.value);
+                    btn.onclick = submitHandler;
+                    input.onkeypress = (e) => { if (e.key === 'Enter') submitHandler(); };
+
+                    inputGroup.appendChild(input);
+                    inputGroup.appendChild(btn);
+                    puzzleContentEl.appendChild(inputGroup);
+                }
+            }
+
+            // Render Actions
+            actionsContainerEl.innerHTML = '';
+            scene.actions.forEach(action => {
+                // Check conditions if present
+                if (action.condition && !action.condition()) return;
+
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.innerHTML = `<span>${action.text}</span> <span>➔</span>`;
+                btn.onclick = () => {
+                    if (action.onSelect) action.onSelect();
+                    if (action.nextScene) {
+                        state.currentRoom = action.nextScene;
+                        renderScene();
+                    }
+                };
+                actionsContainerEl.appendChild(btn);
+            });
+        }
+
+        // Render Ending Screen
+        function renderEnding() {
+            const container = document.querySelector('.game-container');
+            container.innerHTML = `
+                <div class="screen ending">
+                    <h1>🎉 탈출 성공! 🎉</h1>
+                    <p>
+                        보안 카드키를 태그하자 강철 문이 육중한 소리를 내며 열렸습니다.<br>
+                        당신은 무사히 비밀 연구소를 탈출하여 자유의 공기를 마십니다!
+                    </p>
+                    <button class="btn btn-primary" style="margin: 0 auto; display: block;" onclick="location.reload()">다시 플레이하기</button>
+                </div>
+            `;
+        }
+
+        // Initialize Game
+        renderScene();
+    </script>
+</body>
+</html>
