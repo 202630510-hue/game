@@ -3,19 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>비밀 연구소 탈출 (Escape Room)</title>
+    <title>톰 골드런 (Tom Gold Run Style)</title>
     <style>
-        :root {
-            --bg-color: #121316;
-            --card-bg: #1c1e24;
-            --accent-color: #00e676;
-            --accent-glow: rgba(0, 230, 118, 0.3);
-            --danger-color: #ff5252;
-            --text-color: #e0e6ed;
-            --sub-text: #8a99ad;
-            --border-color: #2e3440;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
@@ -24,579 +13,570 @@
         }
 
         body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            min-height: 100vh;
+            background-color: #0d1117;
+            color: #fff;
+            font-family: 'Pretendard', -apple-system, sans-serif;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            padding: 20px;
+            justify-content: center;
+            min-height: 100vh;
+            gap: 12px;
+            overflow: hidden;
         }
 
         .game-container {
-            width: 100%;
-            max-width: 800px;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
+            position: relative;
+            width: 400px;
+            height: 600px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
             border-radius: 16px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            border: 3px solid #30363d;
         }
 
-        /* Header / Stats Bar */
-        .game-header {
-            padding: 16px 24px;
-            background-color: rgba(0, 0, 0, 0.3);
-            border-bottom: 1px solid var(--border-color);
+        /* Canvas UI Overlay */
+        .hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .game-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--accent-color);
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .game-title::before {
-            content: '';
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            background-color: var(--accent-color);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--accent-color);
-        }
-
-        .inventory-bar {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .inventory-title {
-            font-size: 0.85rem;
-            color: var(--sub-text);
-            margin-right: 4px;
-        }
-
-        .inventory-slot {
-            width: 40px;
-            height: 40px;
-            background-color: rgba(255, 255, 255, 0.05);
-            border: 1px dashed var(--border-color);
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.2rem;
-            position: relative;
-            transition: all 0.2s ease;
-        }
-
-        .inventory-slot.has-item {
-            border-style: solid;
-            border-color: var(--accent-color);
-            background-color: rgba(0, 230, 118, 0.1);
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
-
-        .inventory-slot .tooltip {
-            visibility: hidden;
-            position: absolute;
-            bottom: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #000;
-            color: #fff;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            white-space: nowrap;
             z-index: 10;
-            opacity: 0;
-            transition: opacity 0.2s;
+            background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
         }
 
-        .inventory-slot:hover .tooltip {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        /* Screen Display Area */
-        .screen {
-            padding: 30px;
-            min-height: 250px;
+        .stat-box {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        .room-title {
-            font-size: 1.5rem;
-            margin-bottom: 12px;
-            color: #fff;
+        .gold-icon {
+            color: #ffd700;
         }
 
-        .story-text {
-            font-size: 1.05rem;
-            line-height: 1.6;
-            color: var(--text-color);
-            margin-bottom: 24px;
+        .score-box {
+            color: #58a6ff;
         }
 
-        .puzzle-box {
-            background-color: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 24px;
-            display: none;
-        }
-
-        .puzzle-box.active {
+        canvas {
             display: block;
         }
 
-        .input-group {
+        /* Game Over Screen */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 17, 23, 0.85);
             display: flex;
-            gap: 10px;
-            margin-top: 12px;
-        }
-
-        input[type="text"], input[type="number"] {
-            flex: 1;
-            padding: 12px 16px;
-            background-color: #121316;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input[type="text"]:focus, input[type="number"]:focus {
-            border-color: var(--accent-color);
-        }
-
-        /* Action Buttons Area */
-        .actions-container {
-            padding: 20px 30px 30px 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .btn {
-            padding: 14px 20px;
-            background-color: #262a33;
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: left;
-            display: flex;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            justify-content: space-between;
+            gap: 15px;
+            z-index: 20;
+            backdrop-filter: blur(4px);
         }
 
-        .btn:hover {
-            background-color: #323743;
-            border-color: var(--accent-color);
-            color: #fff;
-            transform: translateY(-2px);
+        .overlay h1 {
+            font-size: 2.2rem;
+            color: #ff7b72;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
-        .btn-primary {
-            background-color: var(--accent-color);
-            color: #0a0a0c;
-            border: none;
+        .final-stats {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #c9d1d9;
+            line-height: 1.6;
         }
 
-        .btn-primary:hover {
-            background-color: #00c853;
-            color: #000;
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        .btn-submit {
-            padding: 12px 20px;
-            background-color: var(--accent-color);
-            color: #000;
+        .restart-btn {
+            padding: 12px 30px;
+            font-size: 1.1rem;
             font-weight: bold;
+            background: linear-gradient(135deg, #238636, #2ea043);
+            color: #fff;
             border: none;
             border-radius: 8px;
             cursor: pointer;
+            box-shadow: 0 4px 12px rgba(46, 160, 67, 0.4);
+            transition: transform 0.15s;
         }
 
-        /* Message Overlay / Toast */
-        .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-50px);
-            background-color: #262a33;
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 30px;
-            border: 1px solid var(--accent-color);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            pointer-events: none;
-            font-size: 0.95rem;
-            z-index: 100;
+        .restart-btn:hover {
+            transform: scale(1.05);
         }
 
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
+        /* Instructions Footer */
+        .controls-info {
+            display: flex;
+            gap: 15px;
+            background: #161b22;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            font-size: 0.85rem;
+            color: #8b949e;
         }
 
-        /* Ending Screen Special */
-        .ending {
-            text-align: center;
-            padding: 40px 20px;
-        }
-        
-        .ending h1 {
-            color: var(--accent-color);
-            font-size: 2.2rem;
-            margin-bottom: 16px;
-            text-shadow: 0 0 20px var(--accent-glow);
-        }
-
-        .ending p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin-bottom: 30px;
+        .key {
+            background: #21262d;
+            color: #c9d1d9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #30363d;
+            font-weight: bold;
+            font-family: monospace;
         }
     </style>
 </head>
 <body>
 
     <div class="game-container">
-        <!-- Header -->
-        <div class="game-header">
-            <div class="game-title">SECRET LAB ESCAPE</div>
-            <div class="inventory-bar">
-                <span class="inventory-title">소지품:</span>
-                <div class="inventory-slot" id="slot-1"><span class="tooltip">빈 슬롯</span></div>
-                <div class="inventory-slot" id="slot-2"><span class="tooltip">빈 슬롯</span></div>
-                <div class="inventory-slot" id="slot-3"><span class="tooltip">빈 슬롯</span></div>
+        <!-- HUD Overlay -->
+        <div class="hud">
+            <div class="stat-box gold-icon">
+                🟡 <span id="gold-count">0</span>
+            </div>
+            <div class="stat-box score-box">
+                SCORE <span id="score">0</span>
             </div>
         </div>
 
-        <!-- Main Display Area -->
-        <div class="screen" id="screen">
-            <h2 class="room-title" id="room-title">어두운 연구실</h2>
-            <p class="story-text" id="story-text">
-                눈을 뜨니 차가운 금속 침대 위입니다. 경보음이 조용히 울리고 있으며, 굳게 닫힌 강철 문이 보입니다. 
-                탈출하지 않으면 연구실이 영구 봉쇄될 것입니다!
-            </p>
+        <!-- Canvas Area -->
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-            <!-- Dynamic Interactive Area (Inputs/Puzzles) -->
-            <div class="puzzle-box" id="puzzle-box">
-                <div id="puzzle-content"></div>
+        <!-- Start & Game Over Screen -->
+        <div class="overlay" id="overlay">
+            <h1 id="overlay-title">TOM GOLD RUN</h1>
+            <div class="final-stats" id="final-stats">
+                장애물을 피하고 황금 바를 수집하세요!
             </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="actions-container" id="actions-container">
-            <!-- Dynamic Buttons Will Render Here -->
+            <button class="restart-btn" id="start-btn" onclick="startGame()">게임 시작</button>
         </div>
     </div>
 
-    <div class="toast" id="toast">알림 메시지</div>
+    <!-- Controls Info -->
+    <div class="controls-info">
+        <span>좌/우 이동: <span class="key">◀</span> <span class="key">▶</span> / <span class="key">A</span> <span class="key">D</span></span>
+        <span>점프: <span class="key">▲</span> / <span class="key">W</span> / <span class="key">Space</span></span>
+        <span>슬라이딩: <span class="key">▼</span> / <span class="key">S</span></span>
+    </div>
 
     <script>
-        // Game State
-        const state = {
-            currentRoom: 'start',
-            inventory: [],
-            flags: {
-                foundNote: false,
-                foundUVLight: false,
-                readSecretMessage: false,
-                doorUnlocked: false,
-                cabinetUnlocked: false,
-                safeUnlocked: false
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game Configuration
+        const CANVAS_WIDTH = 400;
+        const CANVAS_HEIGHT = 600;
+        const LANES = [100, 200, 300]; // 3 Lanes (X coordinates)
+        
+        let currentLane = 1; // 0: Left, 1: Center, 2: Right
+        let isGaming = false;
+        let score = 0;
+        let goldBars = 0;
+        let speed = 7;
+        let animationFrameId = null;
+
+        // Player Object
+        const player = {
+            lane: 1,
+            x: LANES[1],
+            y: 480,
+            targetX: LANES[1],
+            width: 36,
+            height: 50,
+            color: '#ff9800', // Tom Orange
+            
+            // Jump & Slide State
+            isJumping: false,
+            jumpVy: 0,
+            jumpYOffset: 0,
+            
+            isSliding: false,
+            slideTimer: 0,
+
+            update() {
+                // Smooth Horizontal Movement
+                this.x += (this.targetX - this.x) * 0.25;
+
+                // Handle Jump Physics
+                if (this.isJumping) {
+                    this.jumpYOffset += this.jumpVy;
+                    this.jumpVy += 0.8; // Gravity
+
+                    if (this.jumpYOffset >= 0) {
+                        this.jumpYOffset = 0;
+                        this.isJumping = false;
+                    }
+                }
+
+                // Handle Slide State
+                if (this.isSliding) {
+                    this.slideTimer--;
+                    if (this.slideTimer <= 0) {
+                        this.isSliding = false;
+                    }
+                }
+            },
+
+            draw() {
+                ctx.save();
+                const actualY = this.y + this.jumpYOffset;
+                const drawHeight = this.isSliding ? this.height * 0.5 : this.height;
+                const drawY = this.isSliding ? actualY + this.height * 0.5 : actualY;
+
+                // Player Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y + this.height, 20, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Player Body (Tom Character)
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.roundRect(this.x - this.width / 2, drawY, this.width, drawHeight, 8);
+                ctx.fill();
+
+                // Cat Ears (Head decoration)
+                if (!this.isSliding) {
+                    ctx.fillStyle = '#e65100';
+                    ctx.beginPath();
+                    ctx.moveTo(this.x - 14, drawY);
+                    ctx.lineTo(this.x - 6, drawY - 10);
+                    ctx.lineTo(this.x - 2, drawY);
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + 14, drawY);
+                    ctx.lineTo(this.x + 6, drawY - 10);
+                    ctx.lineTo(this.x + 2, drawY);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            },
+
+            jump() {
+                if (!this.isJumping && !this.isSliding) {
+                    this.isJumping = true;
+                    this.jumpVy = -13;
+                }
+            },
+
+            slide() {
+                if (!this.isJumping && !this.isSliding) {
+                    this.isSliding = true;
+                    this.slideTimer = 35; // Frames duration
+                }
             }
         };
 
-        // UI Elements
-        const roomTitleEl = document.getElementById('room-title');
-        const storyTextEl = document.getElementById('story-text');
-        const puzzleBoxEl = document.getElementById('puzzle-box');
-        const puzzleContentEl = document.getElementById('puzzle-content');
-        const actionsContainerEl = document.getElementById('actions-container');
-        const toastEl = document.getElementById('toast');
+        // Game Entities Arrays
+        let obstacles = [];
+        let items = [];
 
-        // Toast Notification Helper
-        function showToast(message) {
-            toastEl.textContent = message;
-            toastEl.classList.add('show');
-            setTimeout(() => {
-                toastEl.classList.remove('show');
-            }, 2500);
-        }
+        // Track Perspective Grid
+        let roadOffset = 0;
 
-        // Inventory UI Update
-        function updateInventoryUI() {
-            const slots = [document.getElementById('slot-1'), document.getElementById('slot-2'), document.getElementById('slot-3')];
-            
-            slots.forEach((slot, idx) => {
-                const item = state.inventory[idx];
-                if (item) {
-                    slot.classList.add('has-item');
-                    slot.innerHTML = `${item.icon}<span class="tooltip">${item.name}</span>`;
-                } else {
-                    slot.classList.remove('has-item');
-                    slot.innerHTML = `<span class="tooltip">빈 슬롯</span>`;
-                }
-            });
-        }
+        function spawnEntities() {
+            if (Math.random() < 0.03) {
+                const lane = Math.floor(Math.random() * 3);
+                const type = Math.random() < 0.4 ? 'HIGH' : 'LOW'; // HIGH: Jump under (Slide), LOW: Jump over
+                obstacles.push({
+                    lane: lane,
+                    x: LANES[lane],
+                    y: -60,
+                    width: 50,
+                    height: type === 'HIGH' ? 40 : 45,
+                    type: type,
+                    color: type === 'HIGH' ? '#e53935' : '#8d6e63'
+                });
+            }
 
-        function addItem(id, name, icon) {
-            if (!state.inventory.some(item => item.id === id)) {
-                state.inventory.push({ id, name, icon });
-                updateInventoryUI();
-                showToast(`아이템 획득: [${name}]`);
+            if (Math.random() < 0.05) {
+                const lane = Math.floor(Math.random() * 3);
+                items.push({
+                    lane: lane,
+                    x: LANES[lane],
+                    y: -30,
+                    size: 16,
+                    collected: false
+                });
             }
         }
 
-        function hasItem(id) {
-            return state.inventory.some(item => item.id === id);
-        }
+        function updateEntities() {
+            // Update Obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.y += speed;
 
-        // Rooms & Game Logic
-        const scenes = {
-            start: {
-                title: '어두운 연구실 - 중앙',
-                text: '방 중앙에 서 있습니다. 전면에는 [비밀번호 키패드]가 달린 굳게 닫힌 강철 문이 있고, 오른쪽에는 [실험대], 왼쪽에는 [자물쇠가 걸린 장식장]이 보입니다.',
-                actions: [
-                    { text: '🔬 실험대 조사하기', nextScene: 'desk' },
-                    { text: '🗄️ 장식장 조사하기', nextScene: 'cabinet' },
-                    { text: '🚪 강철 문(출구) 접근하기', nextScene: 'door' }
-                ]
-            },
-            desk: {
-                title: '실험대 주변',
-                text: '어지럽게 정돈되지 않은 시약병과 서류들이 널브러져 있습니다. 구석에는 메모지와 손전등 같은 장비가 보입니다.',
-                actions: [
-                    { 
-                        text: '📄 구겨진 종이 메모 줍기', 
-                        condition: () => !state.flags.foundNote,
-                        onSelect: () => {
-                            state.flags.foundNote = true;
-                            addItem('note', '숫자 메모', '📄');
-                        },
-                        nextScene: 'desk'
-                    },
-                    {
-                        text: '🔦 자외선(UV) 플래시 줍기',
-                        condition: () => !state.flags.foundUVLight,
-                        onSelect: () => {
-                            state.flags.foundUVLight = true;
-                            addItem('uv', 'UV 랜턴', '🔦');
-                        },
-                        nextScene: 'desk'
-                    },
-                    {
-                        text: '📄 메모지 다시 읽기',
-                        condition: () => state.flags.foundNote,
-                        onSelect: () => {
-                            alert('메모 내용:\n"원소의 주기율표 번호를 기억해라.\n수소(H)=1, 탄소(C)=6, 산소(O)=8..."\n\n뒷면: [ C - H - O ]');
-                        },
-                        nextScene: 'desk'
-                    },
-                    { text: '🔙 방 중앙으로 돌아가기', nextScene: 'start' }
-                ]
-            },
-            cabinet: {
-                title: '잠긴 장식장',
-                text: () => state.flags.cabinetUnlocked 
-                    ? '장식장이 열려있습니다. 안에 [금고]가 들어있는 것이 보입니다.'
-                    : '다이얼 방식의 3자리 암호 자물쇠로 잠겨있습니다. 원소 기호 힌트가 필요할 것 같습니다.',
-                puzzle: () => {
-                    if (state.flags.cabinetUnlocked) return null;
-                    return {
-                        type: 'input',
-                        placeholder: '3자리 숫자 입력 (예: 123)',
-                        buttonText: '자물쇠 열기',
-                        check: (val) => {
-                            // C(6) - H(1) - O(8) -> 618
-                            if (val.trim() === '618') {
-                                state.flags.cabinetUnlocked = true;
-                                showToast('철컥! 장식장 자물쇠가 열렸습니다.');
-                                renderScene();
-                            } else {
-                                showToast('암호가 틀렸습니다!');
-                            }
-                        }
-                    };
-                },
-                actions: [
-                    {
-                        text: '🔒 금고 살펴보기',
-                        condition: () => state.flags.cabinetUnlocked,
-                        nextScene: 'safe'
-                    },
-                    { text: '🔙 방 중앙으로 돌아가기', nextScene: 'start' }
-                ]
-            },
-            safe: {
-                title: '내부 금고',
-                text: () => {
-                    if (state.flags.safeUnlocked) {
-                        return '금고가 열려있습니다. 이미 열쇠를 획득했습니다.';
-                    }
-                    let txt = '금고 위쪽에 투명한 판이 하나 부착되어 있습니다.';
-                    if (hasItem('uv')) {
-                        txt += ' [UV 랜턴]을 사용하면 숨겨진 글씨가 보일 것 같습니다.';
-                    }
-                    return txt;
-                },
-                actions: [
-                    {
-                        text: '🔦 UV 랜턴 비춰보기',
-                        condition: () => hasItem('uv') && !state.flags.readSecretMessage,
-                        onSelect: () => {
-                            state.flags.readSecretMessage = true;
-                            alert('UV 빛을 비추니 형광 글씨가 드러납니다!\n\n"금고 비밀번호: 2026"');
-                        },
-                        nextScene: 'safe'
-                    },
-                    { text: '🔙 장식장에서 물러나기', nextScene: 'cabinet' }
-                ],
-                puzzle: () => {
-                    if (state.flags.safeUnlocked) return null;
-                    return {
-                        type: 'input',
-                        placeholder: '4자리 금고 번호 입력',
-                        buttonText: '금고 해제',
-                        check: (val) => {
-                            if (val.trim() === '2026') {
-                                state.flags.safeUnlocked = true;
-                                addItem('keycard', '보안 카드키', '💳');
-                                showToast('금고가 열리고 보안 카드키를 얻었습니다!');
-                                renderScene();
-                            } else {
-                                showToast('비밀번호가 올바르지 않습니다.');
-                            }
-                        }
-                    };
-                }
-            },
-            door: {
-                title: '탈출 강철 문',
-                text: () => {
-                    if (hasItem('keycard')) {
-                        return '비밀번호 키패드 옆에 카드 리더기가 반짝이고 있습니다. [보안 카드키]를 사용할 수 있습니다!';
-                    }
-                    return '문 옆 키패드에 붉은색 경고등이 들어와 있습니다. 메인 보안을 해제할 카드키가 필요합니다.';
-                },
-                actions: [
-                    {
-                        text: '💳 보안 카드키 태그하기',
-                        condition: () => hasItem('keycard'),
-                        onSelect: () => {
-                            renderEnding();
-                        }
-                    },
-                    { text: '🔙 방 중앙으로 돌아가기', nextScene: 'start' }
-                ]
-            }
-        };
-
-        // Render Current Scene
-        function renderScene() {
-            const scene = scenes[state.currentRoom];
-            
-            // Set Title & Description
-            roomTitleEl.textContent = scene.title;
-            storyTextEl.textContent = typeof scene.text === 'function' ? scene.text() : scene.text;
-
-            // Handle Puzzles / Inputs
-            puzzleBoxEl.classList.remove('active');
-            puzzleContentEl.innerHTML = '';
-
-            if (scene.puzzle) {
-                const puzzleData = scene.puzzle();
-                if (puzzleData) {
-                    puzzleBoxEl.classList.add('active');
-                    
-                    const inputGroup = document.createElement('div');
-                    inputGroup.className = 'input-group';
-
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.placeholder = puzzleData.placeholder;
-
-                    const btn = document.createElement('button');
-                    btn.className = 'btn-submit';
-                    btn.textContent = puzzleData.buttonText;
-                    
-                    const submitHandler = () => puzzleData.check(input.value);
-                    btn.onclick = submitHandler;
-                    input.onkeypress = (e) => { if (e.key === 'Enter') submitHandler(); };
-
-                    inputGroup.appendChild(input);
-                    inputGroup.appendChild(btn);
-                    puzzleContentEl.appendChild(inputGroup);
-                }
-            }
-
-            // Render Actions
-            actionsContainerEl.innerHTML = '';
-            scene.actions.forEach(action => {
-                // Check conditions if present
-                if (action.condition && !action.condition()) return;
-
-                const btn = document.createElement('button');
-                btn.className = 'btn';
-                btn.innerHTML = `<span>${action.text}</span> <span>➔</span>`;
-                btn.onclick = () => {
-                    if (action.onSelect) action.onSelect();
-                    if (action.nextScene) {
-                        state.currentRoom = action.nextScene;
-                        renderScene();
-                    }
+                // Collision Detection with Player
+                const pBox = {
+                    left: player.x - player.width / 2 + 5,
+                    right: player.x + player.width / 2 - 5,
+                    top: player.y + player.jumpYOffset + (player.isSliding ? player.height * 0.5 : 0),
+                    bottom: player.y + player.jumpYOffset + player.height
                 };
-                actionsContainerEl.appendChild(btn);
+
+                const oBox = {
+                    left: obs.x - obs.width / 2,
+                    right: obs.x + obs.width / 2,
+                    top: obs.y,
+                    bottom: obs.y + obs.height
+                };
+
+                if (
+                    pBox.right > oBox.left &&
+                    pBox.left < oBox.right &&
+                    pBox.bottom > oBox.top &&
+                    pBox.top < oBox.bottom
+                ) {
+                    // Check if dodgeable by Jump or Slide
+                    if (obs.type === 'LOW' && player.jumpYOffset < -25) {
+                        // Successfully jumped over low obstacle
+                    } else if (obs.type === 'HIGH' && player.isSliding) {
+                        // Successfully slided under high barrier
+                    } else {
+                        gameOver();
+                        return;
+                    }
+                }
+
+                if (obs.y > CANVAS_HEIGHT + 50) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Update Gold Bars (Items)
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                item.y += speed;
+
+                // Pickup Detection
+                const dist = Math.hypot(player.x - item.x, (player.y + player.jumpYOffset + 25) - item.y);
+                if (dist < 35 && !item.collected) {
+                    item.collected = true;
+                    goldBars += 1;
+                    score += 50;
+                    document.getElementById('gold-count').textContent = goldBars;
+                }
+
+                if (item.y > CANVAS_HEIGHT + 30) {
+                    items.splice(i, 1);
+                }
+            }
+        }
+
+        function drawPerspectiveRoad() {
+            // Draw City Sky / Background
+            const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+            gradient.addColorStop(0, '#1a237e');
+            gradient.addColorStop(0.4, '#283593');
+            gradient.addColorStop(1, '#0d47a1');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Draw Road Base (Perspective View)
+            ctx.fillStyle = '#263238';
+            ctx.beginPath();
+            ctx.moveTo(120, 0);
+            ctx.lineTo(280, 0);
+            ctx.lineTo(380, CANVAS_HEIGHT);
+            ctx.lineTo(20, CANVAS_HEIGHT);
+            ctx.fill();
+
+            // Draw Lane Dividers
+            roadOffset = (roadOffset + speed) % 40;
+            ctx.strokeStyle = '#ffeb3b';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([20, 20]);
+            ctx.lineDashOffset = -roadOffset;
+
+            ctx.beginPath();
+            ctx.moveTo(150, 0);
+            ctx.lineTo(140, CANVAS_HEIGHT);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(250, 0);
+            ctx.lineTo(260, CANVAS_HEIGHT);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+        }
+
+        function render() {
+            // 1. Draw Environment
+            drawPerspectiveRoad();
+
+            // 2. Draw Items (Gold Bars)
+            items.forEach(item => {
+                if (!item.collected) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.shadowColor = '#ffe082';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.roundRect(item.x - 10, item.y - 6, 20, 12, 3);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
             });
+
+            // 3. Draw Obstacles
+            obstacles.forEach(obs => {
+                ctx.fillStyle = obs.color;
+                if (obs.type === 'HIGH') {
+                    // High Barricade (Slide under)
+                    ctx.fillRect(obs.x - obs.width / 2, obs.y, obs.width, 15);
+                    ctx.fillStyle = '#424242';
+                    ctx.fillRect(obs.x - obs.width / 2, obs.y, 8, obs.height);
+                    ctx.fillRect(obs.x + obs.width / 2 - 8, obs.y, 8, obs.height);
+                } else {
+                    // Low Block (Jump over)
+                    ctx.beginPath();
+                    ctx.roundRect(obs.x - obs.width / 2, obs.y, obs.width, obs.height, 6);
+                    ctx.fill();
+                    ctx.fillStyle = '#fbc02d';
+                    ctx.fillRect(obs.x - 12, obs.y + 10, 24, 8);
+                }
+            });
+
+            // 4. Draw Player
+            player.update();
+            player.draw();
         }
 
-        // Render Ending Screen
-        function renderEnding() {
-            const container = document.querySelector('.game-container');
-            container.innerHTML = `
-                <div class="screen ending">
-                    <h1>🎉 탈출 성공! 🎉</h1>
-                    <p>
-                        보안 카드키를 태그하자 강철 문이 육중한 소리를 내며 열렸습니다.<br>
-                        당신은 무사히 비밀 연구소를 탈출하여 자유의 공기를 마십니다!
-                    </p>
-                    <button class="btn btn-primary" style="margin: 0 auto; display: block;" onclick="location.reload()">다시 플레이하기</button>
-                </div>
+        function gameLoop() {
+            if (!isGaming) return;
+
+            score += 1;
+            speed = 7 + Math.floor(score / 400) * 0.5; // Gradually increase speed
+            document.getElementById('score').textContent = score;
+
+            spawnEntities();
+            updateEntities();
+            render();
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            score = 0;
+            goldBars = 0;
+            speed = 7;
+            obstacles = [];
+            items = [];
+            currentLane = 1;
+            player.lane = 1;
+            player.x = LANES[1];
+            player.targetX = LANES[1];
+            player.isJumping = false;
+            player.isSliding = false;
+
+            document.getElementById('score').textContent = '0';
+            document.getElementById('gold-count').textContent = '0';
+            document.getElementById('overlay').style.display = 'none';
+
+            isGaming = true;
+            gameLoop();
+        }
+
+        function gameOver() {
+            isGaming = false;
+            cancelAnimationFrame(animationFrameId);
+
+            document.getElementById('overlay-title').textContent = 'GAME OVER';
+            document.getElementById('final-stats').innerHTML = `
+                최종 점수: <b>${score}</b><br>
+                획득한 황금: 🟡 <b>${goldBars}</b>
             `;
+            document.getElementById('start-btn').textContent = '다시 도전';
+            document.getElementById('overlay').style.display = 'flex';
         }
 
-        // Initialize Game
-        renderScene();
+        // Input Event Handlers (Keyboard)
+        window.addEventListener('keydown', (e) => {
+            if (!isGaming) return;
+
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    if (currentLane > 0) {
+                        currentLane--;
+                        player.targetX = LANES[currentLane];
+                    }
+                    break;
+
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    if (currentLane < 2) {
+                        currentLane++;
+                        player.targetX = LANES[currentLane];
+                    }
+                    break;
+
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                case ' ':
+                    player.jump();
+                    break;
+
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    player.slide();
+                    break;
+            }
+        });
+
+        // Touch Control Support (Mobile/Tablet)
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!isGaming) return;
+
+            const diffX = e.changedTouches[0].clientX - touchStartX;
+            const diffY = e.changedTouches[0].clientY - touchStartY;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 30 && currentLane < 2) {
+                    currentLane++;
+                    player.targetX = LANES[currentLane];
+                } else if (diffX < -30 && currentLane > 0) {
+                    currentLane--;
+                    player.targetX = LANES[currentLane];
+                }
+            } else {
+                if (diffY < -30) {
+                    player.jump();
+                } else if (diffY > 30) {
+                    player.slide();
+                }
+            }
+        });
     </script>
 </body>
 </html>
